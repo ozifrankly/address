@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-type innerAddress struct {
+type viacepAddress struct {
 	CEP         string `json:"cep"`
 	Logradouro  string `json:"logradouro"`
 	Complemento string `json:"complemento"`
@@ -30,7 +30,7 @@ func fetchViacep(cep string) (*Address, error) {
 	}
 	defer resp.Body.Close()
 
-	var inner innerAddress
+	var inner viacepAddress
 	err = json.NewDecoder(resp.Body).Decode(&inner)
 	if err != nil {
 		return nil, err
