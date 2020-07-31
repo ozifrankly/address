@@ -2,6 +2,7 @@ package address
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -36,13 +37,16 @@ type body struct {
 const xmlBegin = "<?xml version=\"1.0\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:cli=\"http://cliente.bean.master.sigep.bsb.correios.com.br/\"><soapenv:Header /><soapenv:Body><cli:consultaCEP><cep>"
 const xmlEnd = "</cep></cli:consultaCEP></soapenv:Body></soapenv:Envelope>"
 
-func fetchCorreios(cep string) (*Address, error) {
+func fetchCorreios(ctx context.Context, addr chan Address, cep string) {
+	var inner response
+	var bodyBytes []byte
 	var url = "https://apps.correios.com.br/SigepMasterJPA/AtendeClienteService/AtendeCliente"
-	client := &http.Client{}
 	var data = []byte(fmt.Sprint(xmlBegin, cep, xmlEnd))
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+
+	client := &http.Client{}
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, err
+		addr <- Address{err: err}
 	}
 
 	req.Header.Set("Content-Type", "text/xml;charset=UTF-8")
@@ -50,25 +54,26 @@ func fetchCorreios(cep string) (*Address, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		addr <- Address{err: err}
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 500 {
-		return nil, errors.New("invalid cep")
+		addr <- Address{err: errors.New("invalid cep")}
+		return
 	}
-	var inner response
-	var bodyBytes []byte
 
 	if bodyBytes, err = ioutil.ReadAll(resp.Body); err != nil {
-		return nil, err
+		addr <- Address{err: err}
+		return
 	}
 
 	if err := xml.Unmarshal(bodyBytes, &inner); err != nil {
-		return nil, err
+		addr <- Address{err: err}
+		return
 	}
 	resposeAddr := inner.SoapBody.Resp.Response
 
-	address := Address{City: resposeAddr.City, District: resposeAddr.District, Complement: resposeAddr.Complement, Street: resposeAddr.Address}
-	return &address, nil
+	addr <- Address{City: resposeAddr.City, District: resposeAddr.District, Complement: resposeAddr.Complement, Street: resposeAddr.Address}
 }

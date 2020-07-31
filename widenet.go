@@ -1,6 +1,7 @@
 package address
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,28 +16,37 @@ type widenetAddress struct {
 	OK       bool   `json:"ok"`
 }
 
-func fetchWidenet(cep string) (*Address, error) {
+func fetchWidenet(ctx context.Context, addr chan Address, cep string) {
 	var url = fmt.Sprint("https://cep.widenet.host/busca-cep/api/cep/", cep, ".json")
+	var inner widenetAddress
+
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
 	if err != nil {
-		return nil, err
+		addr <- Address{err: err}
 	}
+
 	req.Header.Set("Content-Type", "application/json;charset=utf-8")
 	resp, err := client.Do(req)
+
 	if err != nil {
-		return nil, err
+		addr <- Address{err: err}
+		return
 	}
+
 	defer resp.Body.Close()
-	var inner widenetAddress
+
 	err = json.NewDecoder(resp.Body).Decode(&inner)
+
 	if err != nil {
-		return nil, err
+		addr <- Address{err: err}
+		return
 	}
+
 	if !inner.OK {
-		return nil, errors.New("invalid cep")
+		addr <- Address{err: errors.New("invalid cep")}
+		return
 	}
-	address := Address{City: inner.City, District: inner.District, Complement: "", Street: inner.Address}
-	return &address, nil
+	addr <- Address{City: inner.City, District: inner.District, Complement: "", Street: inner.Address, err: nil}
 }

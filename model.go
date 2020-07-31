@@ -6,4 +6,5 @@ type Address struct {
 	District   string
 	Street     string
 	Complement string
+	err        error
 }
