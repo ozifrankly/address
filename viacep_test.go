@@ -8,23 +8,43 @@ import (
 )
 
 func TestGetValidCEPFromViacep(t *testing.T) {
+	var err error
+	var addr Address
 	forever := make(chan Address)
+	errChan := make(chan error)
+
 	ctx, cancel := context.WithCancel(context.Background())
-	go fetchViacep(ctx, forever, "01001000")
-	address := <-forever
-	cancel()
-	assert.Equal(t, "São Paulo", address.City)
-	assert.Equal(t, "Sé", address.District)
-	assert.Equal(t, "lado ímpar", address.Complement)
-	assert.Equal(t, "Praça da Sé", address.Street)
-	assert.Nil(t, address.err)
+	defer cancel()
+	go fetchViacep(ctx, "01001000", forever, errChan)
+
+	select {
+	case addr = <-forever:
+	case err = <-errChan:
+	}
+
+	assert.Equal(t, "São Paulo", addr.City)
+	assert.Equal(t, "Sé", addr.District)
+	assert.Equal(t, "lado ímpar", addr.Complement)
+	assert.Equal(t, "Praça da Sé", addr.Street)
+	assert.Nil(t, err)
 }
 
 func TestGetInvalidCEPFromViacep(t *testing.T) {
+	var err error
+	var addr Address
 	forever := make(chan Address)
+	errChan := make(chan error)
+
 	ctx, cancel := context.WithCancel(context.Background())
-	go fetchViacep(ctx, forever, "00000000")
-	address := <-forever
-	cancel()
-	assert.Error(t, address.err)
+	defer cancel()
+	go fetchViacep(ctx, "00000000", forever, errChan)
+
+	select {
+	case addr = <-forever:
+	case err = <-errChan:
+	}
+
+	assert.Empty(t, addr)
+	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

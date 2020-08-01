@@ -17,34 +17,34 @@ type viacepAddress struct {
 	Fail        bool   `json:"erro"`
 }
 
-func fetchViacep(ctx context.Context, addr chan Address, cep string) {
+func fetchViacep(ctx context.Context, cep string, addr chan Address, errChan chan error) {
 	var inner viacepAddress
 	var url = fmt.Sprint("https://viacep.com.br/ws/", cep, "/json/")
 
 	client := &http.Client{}
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		addr <- Address{err: err}
+		errChan <- err
 		return
 	}
 	req.Header.Set("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		addr <- Address{err: err}
+		errChan <- err
 		return
 	}
 	defer resp.Body.Close()
 
 	err = json.NewDecoder(resp.Body).Decode(&inner)
 	if err != nil {
-		addr <- Address{err: err}
+		errChan <- err
 		return
 	}
 	if inner.Fail {
-		addr <- Address{err: errors.New("invalid cep")}
+		errChan <- errors.New("invalid cep")
 		return
 	}
 
-	addr <- Address{City: inner.Localidade, District: inner.Bairro, Complement: inner.Complemento, Street: inner.Logradouro, err: nil}
+	addr <- Address{City: inner.Localidade, District: inner.Bairro, Complement: inner.Complemento, Street: inner.Logradouro}
 }

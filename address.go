@@ -4,14 +4,26 @@ import (
 	"context"
 )
 
-func fetch(cep string) *Address {
-	forever := make(chan Address)
+func fetch(cep string) (*Address, error) {
+	addrChan := make(chan Address)
+	errorChan := make(chan error, 3)
 	var addr Address
+	count := 0
 	ctx, cancel := context.WithCancel(context.Background())
-	go fetchCorreios(ctx, forever, cep)
-	go fetchWidenet(ctx, forever, cep)
-	go fetchViacep(ctx, forever, cep)
-	addr = <-forever
-	cancel()
-	return &addr
+	defer cancel()
+
+	go fetchCorreios(ctx, cep, addrChan, errorChan)
+	go fetchWidenet(ctx, cep, addrChan, errorChan)
+	go fetchViacep(ctx, cep, addrChan, errorChan)
+
+	for {
+		select {
+		case addr = <-addrChan:
+			return &addr, nil
+		case err := <-errorChan:
+			if count++; count == 3 {
+				return nil, err
+			}
+		}
+	}
 }

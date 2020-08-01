@@ -37,7 +37,7 @@ type body struct {
 const xmlBegin = "<?xml version=\"1.0\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:cli=\"http://cliente.bean.master.sigep.bsb.correios.com.br/\"><soapenv:Header /><soapenv:Body><cli:consultaCEP><cep>"
 const xmlEnd = "</cep></cli:consultaCEP></soapenv:Body></soapenv:Envelope>"
 
-func fetchCorreios(ctx context.Context, addr chan Address, cep string) {
+func fetchCorreios(ctx context.Context, cep string, addr chan Address, errChan chan error) {
 	var inner response
 	var bodyBytes []byte
 	var url = "https://apps.correios.com.br/SigepMasterJPA/AtendeClienteService/AtendeCliente"
@@ -46,7 +46,8 @@ func fetchCorreios(ctx context.Context, addr chan Address, cep string) {
 	client := &http.Client{}
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(data))
 	if err != nil {
-		addr <- Address{err: err}
+		errChan <- err
+		return
 	}
 
 	req.Header.Set("Content-Type", "text/xml;charset=UTF-8")
@@ -54,23 +55,23 @@ func fetchCorreios(ctx context.Context, addr chan Address, cep string) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		addr <- Address{err: err}
+		errChan <- err
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 500 {
-		addr <- Address{err: errors.New("invalid cep")}
+		errChan <- errors.New("invalid cep")
 		return
 	}
 
 	if bodyBytes, err = ioutil.ReadAll(resp.Body); err != nil {
-		addr <- Address{err: err}
+		errChan <- err
 		return
 	}
 
 	if err := xml.Unmarshal(bodyBytes, &inner); err != nil {
-		addr <- Address{err: err}
+		errChan <- err
 		return
 	}
 	resposeAddr := inner.SoapBody.Resp.Response

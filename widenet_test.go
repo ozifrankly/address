@@ -8,23 +8,43 @@ import (
 )
 
 func TestGetValidCEPFromWidenet(t *testing.T) {
+	var err error
+	var addr Address
 	forever := make(chan Address)
+	errChan := make(chan error)
+
 	ctx, cancel := context.WithCancel(context.Background())
-	go fetchWidenet(ctx, forever, "01001000")
-	address := <-forever
-	cancel()
-	assert.Equal(t, "São Paulo", address.City)
-	assert.Equal(t, "Sé", address.District)
-	assert.Equal(t, "", address.Complement)
-	assert.Equal(t, "Praça da Sé - lado ímpar", address.Street)
-	assert.Nil(t, address.err)
+	defer cancel()
+	go fetchWidenet(ctx, "01001000", forever, errChan)
+
+	select {
+	case addr = <-forever:
+	case err = <-errChan:
+	}
+
+	assert.Equal(t, "São Paulo", addr.City)
+	assert.Equal(t, "Sé", addr.District)
+	assert.Equal(t, "", addr.Complement)
+	assert.Equal(t, "Praça da Sé - lado ímpar", addr.Street)
+	assert.Nil(t, err)
 }
 
 func TestGetInvalidCEPFromWidenet(t *testing.T) {
+	var err error
+	var addr Address
 	forever := make(chan Address)
+	errChan := make(chan error)
+
 	ctx, cancel := context.WithCancel(context.Background())
-	go fetchWidenet(ctx, forever, "00000000")
-	address := <-forever
-	cancel()
-	assert.Error(t, address.err)
+	defer cancel()
+	go fetchWidenet(ctx, "00000000", forever, errChan)
+
+	select {
+	case addr = <-forever:
+	case err = <-errChan:
+	}
+
+	assert.Empty(t, addr)
+	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
