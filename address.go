@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-func fetch(cep string) (*Address, error) {
+func Fetch(cep string) (*Address, error) {
 	addrChan := make(chan Address)
 	errorChan := make(chan error, 3)
 	var addr Address

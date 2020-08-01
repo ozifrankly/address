@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetValidCEP(t *testing.T) {
-	addr, err := fetch("01001000")
+	addr, err := Fetch("01001000")
 	assert.Equal(t, "São Paulo", addr.City)
 	assert.Equal(t, "Sé", addr.District)
 	assert.NotEqual(t, "", addr.Complement)
@@ -18,7 +18,7 @@ func TestGetValidCEP(t *testing.T) {
 }
 
 func TestGetInvalidCEP(t *testing.T) {
-	addr, err := fetch("00000000")
+	addr, err := Fetch("00000000")
 	assert.Nil(t, addr)
 	assert.Error(t, err)
 }
