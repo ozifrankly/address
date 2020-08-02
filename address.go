@@ -4,6 +4,9 @@ import (
 	"context"
 )
 
+/*Fetch  makes a query in some services and returns the result of that ending first.
+If all services cannot find a address, a error will be returned
+*/
 func Fetch(cep string) (*Address, error) {
 	addrChan := make(chan Address)
 	errorChan := make(chan error, 3)
