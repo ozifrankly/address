@@ -14,6 +14,7 @@ type viacepAddress struct {
 	Complemento string `json:"complemento"`
 	Bairro      string `json:"bairro"`
 	Localidade  string `json:"localidade"`
+	UF          string `json:"uf"`
 	Fail        bool   `json:"erro"`
 }
 
@@ -46,5 +47,5 @@ func fetchViacep(ctx context.Context, cep string, addr chan Address, errChan cha
 		return
 	}
 
-	addr <- Address{City: inner.Localidade, District: inner.Bairro, Complement: inner.Complemento, Street: inner.Logradouro}
+	addr <- Address{City: inner.Localidade, District: inner.Bairro, Complement: inner.Complemento, Street: inner.Logradouro, State: inner.UF}
 }

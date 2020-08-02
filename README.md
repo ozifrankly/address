@@ -37,6 +37,7 @@ func main() {
 
 ```
 Address {
+	State      "SP"
 	City       "São Paulo"
 	District   "Sé"
 	Street     "Praça da Sé"

@@ -22,6 +22,7 @@ func TestGetValidCEPFromViacep(t *testing.T) {
 	case err = <-errChan:
 	}
 
+	assert.Equal(t, "SP", addr.State)
 	assert.Equal(t, "São Paulo", addr.City)
 	assert.Equal(t, "Sé", addr.District)
 	assert.Equal(t, "lado ímpar", addr.Complement)

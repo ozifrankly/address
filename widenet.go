@@ -49,5 +49,5 @@ func fetchWidenet(ctx context.Context, cep string, addr chan Address, errChan ch
 		errChan <- errors.New("invalid cep")
 		return
 	}
-	addr <- Address{City: inner.City, District: inner.District, Complement: "", Street: inner.Address}
+	addr <- Address{City: inner.City, District: inner.District, Complement: "", Street: inner.Address, State: inner.State}
 }
